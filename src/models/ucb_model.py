@@ -1,6 +1,10 @@
-import numpy as np
-from collections import Counter, defaultdict
 import matplotlib.pyplot as plt
+import multiprocessing
+import numpy as np
+
+from collections import Counter
+from collections import defaultdict
+from functools import partial
 from tqdm import tqdm
 
 from src.reward_generators.simple_rewards import SimpleRewardsGenerator
@@ -12,7 +16,7 @@ class UCBModel:
 
     def __init__(self, init_rewards, n_items=10):
         self.n_items = n_items
-        self.total_rewards = np.zeros(n_items)
+        self.total_rewards = init_rewards
         self.total_selections = np.zeros(n_items)
         self.is_item_changed = False
         self.item_changed = None
@@ -42,12 +46,10 @@ class UCBModel:
 
         else:
             action = np.where(self.total_selections == 0)[0][0]
-        # breakpoint()
 
         return action
 
     def update(self, actions, rewards, items_changed):
-        # breakpoint()
         totals = np.bincount(actions, weights=rewards)
         unique, counts = np.unique(actions, return_counts=True)
         for i, count in zip(unique, counts):
@@ -55,7 +57,7 @@ class UCBModel:
             self.total_rewards[i] += totals[i]
 
 
-def evaluate(model, reward_gen, n_steps=1000000, delta=1000):
+def evaluate(model, reward_gen, n_steps=1000000, delta=1):
     """Evaulate the regrets and rewards of a given model based on a given reward
     generator
 
@@ -75,7 +77,7 @@ def evaluate(model, reward_gen, n_steps=1000000, delta=1000):
     last_rewards = []
     last_changes = []
     last_selected_actions = []
-    for step in tqdm(range(1, n_steps + 1)):
+    for step in range(1, n_steps + 1):
         reward_vector, item_changed = reward_gen.get_rewards()
         selected_action = model.get_action(step, item_changed)
 
@@ -92,22 +94,50 @@ def evaluate(model, reward_gen, n_steps=1000000, delta=1000):
         # Feedback if delta steps have passed
         if step % delta == 0:
             model.update(last_selected_actions, last_rewards, last_changes)
-            breakpoint()
             last_rewards = []
             last_changes = []
             last_selected_actions = []
     return regrets, rewards
 
 
-if __name__ == "__main__":
+def worker(num, delta):
     gen = SimpleRewardsGenerator(change_prob=1e-3)
-    print("Reward probabilities before: ", gen.reward_probs)
-    rewards, change = gen.get_rewards()
-    print("Rewards: ", rewards)
-    print("Item changed: ", change)
-    print("Reward probabilities after: ", gen.reward_probs, "\n")
+    init_rewards, change = gen.get_rewards()
+    model = UCBModel(init_rewards=init_rewards)
 
-    regrets, rewards = evaluate(UCBModel(init_rewards=rewards), reward_gen=gen)
+    regrets, rewards = evaluate(model, reward_gen=gen, delta=delta)
+    return np.sum(regrets), np.sum(rewards)
+
+
+if __name__ == "__main__":
+    NUM_TRIALS = 100
+    # DELTAS = [1, 3, 10, 32, 100, 316, 1000]
+    DELTAS = [1000, 316, 100, 32, 10, 3, 1]
+
+    # print("Reward probabilities before: ", gen.reward_probs)
+
+    # print("Rewards: ", rewards)
+    # print("Item changed: ", change)
+    # print("Reward probabilities after: ", gen.reward_probs, "\n")
+
+    for delta in tqdm(DELTAS):
+        trial_sum_regrets = []
+        trial_sum_rewards = []
+        with multiprocessing.Pool() as pool:
+            results = pool.map(partial(worker, delta=delta), range
+                               (NUM_TRIALS))
+
+            for result in results:
+                trial_sum_regrets = np.array([x[0] for x in results])
+                trial_sum_rewards = np.array([x[1] for x in results])
+
+            print(f"DELTA: {delta}")
+            print(f"average total regrets: {trial_sum_regrets.mean()}")
+            print(f"std total regrets: {trial_sum_regrets.std()}")
+
+            print(f"average total rewards: {trial_sum_rewards.mean()}")
+            print(f"std total rewards: {trial_sum_regrets.std()}")
+
     # plt.plot(range(len(regrets)), np.cumsum(regrets))
     # plt.title("Regret")
     # plt.show()
@@ -115,4 +145,3 @@ if __name__ == "__main__":
     # plt.plot(range(len(rewards)), np.cumsum(rewards))
     # plt.title("Reward")
     # plt.show()
-    print(f"total regrets: {np.sum(regrets)}")

@@ -17,7 +17,8 @@ class SimpleRewardsGenerator:
         self,
         n_items=10,
         change_prob=1e-3,
-        reward_dist=lambda x: np.random.beta(4, 4, x),
+        reward_dist=lambda x: np.random.default_rng().beta(4.0,
+                                                           4.0, size=x),
     ):
         self.n_items = n_items
         self.change_prob = change_prob
