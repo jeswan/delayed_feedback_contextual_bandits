@@ -7,7 +7,7 @@ from collections import defaultdict
 from functools import partial
 from tqdm import tqdm
 
-from src.reward_generators.simple_rewards import SimpleRewardsGenerator
+from reward_generators.simple_rewards import SimpleRewardsGenerator
 
 
 class UCBModel:

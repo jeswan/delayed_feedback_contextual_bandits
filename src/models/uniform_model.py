@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from src.reward_generators.simple_rewards import SimpleRewardsGenerator
+from reward_generators.simple_rewards import SimpleRewardsGenerator
 
 
 def evaluate(model, n_steps=1000, delta=10, reward_gen=SimpleRewardsGenerator
