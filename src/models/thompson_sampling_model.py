@@ -107,9 +107,9 @@ def evaluate(model, reward_gen, n_steps=1000000, delta=1):
         
         
         if reward_vector[selected_action] == 1:
-            successes += 1
+            successes[selected_action] += 1
         else:
-            failures += 1
+            failures[selected_action] += 1
 
         # Feedback if delta steps have passed
         if step % delta == 0:
@@ -132,7 +132,7 @@ def worker(num, delta):
 if __name__ == "__main__":
     NUM_TRIALS = 100
     # DELTAS = [1, 3, 10, 32, 100, 316, 1000]
-    DELTAS = [1000, 316, 100, 32, 10, 3, 1]
+    DELTAS = [1000,  10]
 
     # print("Reward probabilities before: ", gen.reward_probs)
 
