@@ -39,6 +39,7 @@ class Thompson_Model:
         if item_changed:
             self.total_rewards[item_changed] = 0.0
             self.total_selections[item_changed] = 0
+            
 
         if np.all(self.total_selections):
             #draw thetat a vector of size n_items, according to beta distribution
@@ -89,6 +90,12 @@ def evaluate(model, reward_gen, n_steps=1000000, delta=1):
     failures = np.zeros(model.n_items)
     for step in range(1, n_steps + 1):
         reward_vector, item_changed = reward_gen.get_rewards()
+        
+        if item_changed:
+            successes = np.zeros(model.n_items)
+            failures = np.zeros(model.n_items)
+        
+        
         selected_action = model.get_action(step, item_changed, successes, failures)
         
 
@@ -106,10 +113,13 @@ def evaluate(model, reward_gen, n_steps=1000000, delta=1):
         last_selected_actions.append(selected_action)
         
         
+        
         if reward_vector[selected_action] == 1:
             successes[selected_action] += 1
         else:
             failures[selected_action] += 1
+            
+       
 
         # Feedback if delta steps have passed
         if step % delta == 0:
@@ -132,7 +142,7 @@ def worker(num, delta):
 if __name__ == "__main__":
     NUM_TRIALS = 100
     # DELTAS = [1, 3, 10, 32, 100, 316, 1000]
-    DELTAS = [1000,  10]
+    DELTAS = [1000, 316, 100, 32, 10, 3,  1]
 
     # print("Reward probabilities before: ", gen.reward_probs)
 
