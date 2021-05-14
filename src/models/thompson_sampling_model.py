@@ -13,21 +13,21 @@ from numpy.random import beta
 
 
 class Thompson_Model:
-    """Model that uniformly chooses a random action
+    """Model that chooses random action based on Thompson Sampling heuristic
     """
 
     def __init__(self, init_rewards, n_items=10):
         self.n_items = n_items
         self.total_rewards = init_rewards
         self.total_selections = np.zeros(n_items)
-        self.is_item_changed = False
+        #self.is_item_changed = False
         self.item_changed = None
         self.a_prior = np.ones(n_items)
         self.b_prior = np.ones(n_items)
         
 
-    def get_action(self, step_num, item_changed, successes, failures):
-        """Returns item according to UCB algorithm
+    def get_action(self, item_changed, successes, failures):
+        """Returns item according to Thompson Sampling algorithm
 
         Returns:
             int: Description
@@ -45,7 +45,8 @@ class Thompson_Model:
             #draw thetat a vector of size n_items, according to beta distribution
             #using a_prior + successes and b_prior + failures as parameters.
             #every time this function is called, successes and failures will
-            # have been udpdated from the previous round, so we do not need to change 
+            # have been udpdated from the previous round or else reinitialized
+            #if this is a new item, so we do not need to change 
             #the priors themselves. 
             thetat = beta(self.a_prior + successes, self.b_prior+failures)
                 
@@ -85,18 +86,18 @@ def evaluate(model, reward_gen, n_steps=1000000, delta=1):
     last_rewards = []
     last_changes = []
     last_selected_actions = []
-    #
+    #initialize successs and failures to 0 for all items
     successes = np.zeros(model.n_items)
     failures = np.zeros(model.n_items)
     for step in range(1, n_steps + 1):
         reward_vector, item_changed = reward_gen.get_rewards()
-        
+        #reinitialize the successes and failures if the item has changed
         if item_changed:
             successes = np.zeros(model.n_items)
             failures = np.zeros(model.n_items)
         
         
-        selected_action = model.get_action(step, item_changed, successes, failures)
+        selected_action = model.get_action(item_changed, successes, failures)
         
 
         regret = (
@@ -113,7 +114,8 @@ def evaluate(model, reward_gen, n_steps=1000000, delta=1):
         last_selected_actions.append(selected_action)
         
         
-        
+        #record success or failure of action at appropriate index in 
+        #successes or failures
         if reward_vector[selected_action] == 1:
             successes[selected_action] += 1
         else:
