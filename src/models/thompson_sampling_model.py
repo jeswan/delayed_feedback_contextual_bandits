@@ -24,7 +24,6 @@ class Thompson_Model:
         self.item_changed = None
         self.a_prior = np.ones(n_items)
         self.b_prior = np.ones(n_items)
-        
 
     def get_action(self, item_changed, successes, failures):
         """Returns item according to Thompson Sampling algorithm
@@ -39,19 +38,17 @@ class Thompson_Model:
         if item_changed:
             self.total_rewards[item_changed] = 0.0
             self.total_selections[item_changed] = 0
-            
 
         if np.all(self.total_selections):
-            #draw thetat a vector of size n_items, according to beta distribution
-            #using a_prior + successes and b_prior + failures as parameters.
-            #every time this function is called, successes and failures will
+            # draw thetat a vector of size n_items, according to beta distribution
+            # using a_prior + successes and b_prior + failures as parameters.
+            # every time this function is called, successes and failures will
             # have been udpdated from the previous round or else reinitialized
-            #if this is a new item, so we do not need to change 
-            #the priors themselves. 
+            # if this is a new item, so we do not need to change
+            # the priors themselves.
             thetat = beta(self.a_prior + successes, self.b_prior+failures)
-                
+
             action = np.argmax(thetat)
-            
 
         else:
             action = np.where(self.total_selections == 0)[0][0]
@@ -86,42 +83,34 @@ def evaluate(model, reward_gen, n_steps=1000000, delta=1):
     last_rewards = []
     last_changes = []
     last_selected_actions = []
-    #initialize successs and failures to 0 for all items
+    # initialize successs and failures to 0 for all items
     successes = np.zeros(model.n_items)
     failures = np.zeros(model.n_items)
     for step in range(1, n_steps + 1):
         reward_vector, item_changed = reward_gen.get_rewards()
-        #reinitialize the successes and failures if the item has changed
+        # reinitialize the successes and failures if the item has changed
         if item_changed:
             successes = np.zeros(model.n_items)
             failures = np.zeros(model.n_items)
-        
-        
+
         selected_action = model.get_action(item_changed, successes, failures)
-        
 
         regret = (
             np.max(reward_gen.reward_probs) - reward_gen.reward_probs[selected_action]
         )
-        
-            
-        
 
         regrets.append(regret)
         rewards.append(reward_vector[selected_action])
         last_rewards.append(reward_vector[selected_action])
         last_changes.append(item_changed)
         last_selected_actions.append(selected_action)
-        
-        
-        #record success or failure of action at appropriate index in 
+
+        # record success or failure of action at appropriate index in
         #successes or failures
         if reward_vector[selected_action] == 1:
             successes[selected_action] += 1
         else:
             failures[selected_action] += 1
-            
-       
 
         # Feedback if delta steps have passed
         if step % delta == 0:
@@ -146,33 +135,18 @@ if __name__ == "__main__":
     # DELTAS = [1, 3, 10, 32, 100, 316, 1000]
     DELTAS = [1000, 316, 100, 32, 10, 3,  1]
 
-    # print("Reward probabilities before: ", gen.reward_probs)
-
-    # print("Rewards: ", rewards)
-    # print("Item changed: ", change)
-    # print("Reward probabilities after: ", gen.reward_probs, "\n")
-
     for delta in tqdm(DELTAS):
         trial_sum_regrets = []
         trial_sum_rewards = []
         with multiprocessing.Pool() as pool:
             results = pool.map(partial(worker, delta=delta), range(NUM_TRIALS))
 
-            for result in results:
-                trial_sum_regrets = np.array([x[0] for x in results])
-                trial_sum_rewards = np.array([x[1] for x in results])
+            trial_sum_regrets = np.array([x[0] for x in results])
+            trial_sum_rewards = np.array([x[1] for x in results])
 
             print(f"DELTA: {delta}")
-            print(f"average total regrets: {trial_sum_regrets.mean()}")
-            print(f"std total regrets: {trial_sum_regrets.std()}")
+            print(f"average total regrets: {np.mean(trial_sum_regrets)}")
+            print(f"std total regrets: {np.std(trial_sum_regrets)}")
 
-            print(f"average total rewards: {trial_sum_rewards.mean()}")
-            print(f"std total rewards: {trial_sum_regrets.std()}")
-
-    # plt.plot(range(len(regrets)), np.cumsum(regrets))
-    # plt.title("Regret")
-    # plt.show()
-
-    # plt.plot(range(len(rewards)), np.cumsum(rewards))
-    # plt.title("Reward")
-    # plt.show()
+            print(f"average total rewards: {np.mean(trial_sum_rewards)}")
+            print(f"std total rewards: {np.std(trial_sum_rewards)}")

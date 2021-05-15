@@ -114,12 +114,6 @@ if __name__ == "__main__":
     # DELTAS = [1, 3, 10, 32, 100, 316, 1000]
     DELTAS = [1000, 316, 100, 32, 10, 3, 1]
 
-    # print("Reward probabilities before: ", gen.reward_probs)
-
-    # print("Rewards: ", rewards)
-    # print("Item changed: ", change)
-    # print("Reward probabilities after: ", gen.reward_probs, "\n")
-
     for delta in tqdm(DELTAS):
         trial_sum_regrets = []
         trial_sum_rewards = []
@@ -127,21 +121,12 @@ if __name__ == "__main__":
             results = pool.map(partial(worker, delta=delta), range
                                (NUM_TRIALS))
 
-            for result in results:
-                trial_sum_regrets = np.array([x[0] for x in results])
-                trial_sum_rewards = np.array([x[1] for x in results])
+            trial_sum_regrets = np.array([x[0] for x in results])
+            trial_sum_rewards = np.array([x[1] for x in results])
 
             print(f"DELTA: {delta}")
             print(f"average total regrets: {trial_sum_regrets.mean()}")
             print(f"std total regrets: {trial_sum_regrets.std()}")
 
             print(f"average total rewards: {trial_sum_rewards.mean()}")
-            print(f"std total rewards: {trial_sum_regrets.std()}")
-
-    # plt.plot(range(len(regrets)), np.cumsum(regrets))
-    # plt.title("Regret")
-    # plt.show()
-
-    # plt.plot(range(len(rewards)), np.cumsum(rewards))
-    # plt.title("Reward")
-    # plt.show()
+            print(f"std total rewards: {trial_sum_rewards.std()}")
